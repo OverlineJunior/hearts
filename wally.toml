@@ -1,0 +1,10 @@
+[package]
+name = "overlinejunior/hearts"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+licence = "MIT"
+author = "Over"
+exclude = ["selene.toml", "roblox.toml"]
+
+[dependencies]

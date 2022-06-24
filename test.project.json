@@ -1,0 +1,16 @@
+{
+    "name": "hearts-test",
+    "tree": {
+        "$className": "DataModel",
+        "ServerScriptService": {
+            "$className": "ServerScriptService",
+            "Tests": {
+                "$path": "tests",
+                "Hearts": {
+                    "$path": "src"
+                }
+            }
+            
+        }
+    }
+}
