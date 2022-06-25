@@ -8,6 +8,9 @@
                 "$path": "tests",
                 "Hearts": {
                     "$path": "src"
+                },
+                "Signal": {
+                    "$path": "Packages/_Index/sleitnick_signal@1.2.0/signal"
                 }
             }
             

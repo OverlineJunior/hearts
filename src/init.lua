@@ -1,3 +1,5 @@
+local Signal = require(script.Parent.Signal)
+
 export type Data = {[any]: any}
 type ModifierFn = (number, Data) -> number?
 type Modifiers = {[Humanoid]: {[number]: ModifierFn?}}
@@ -8,6 +10,9 @@ local globalModifiers: GlobalModifiers = {}
 local nextID = 1
 
 local Hearts = {}
+
+Hearts.HumanoidDamaged = Signal.new() --> (Humanoid, damage: number, Data)
+Hearts.HumanoidHealed = Signal.new() --> (Humanoid, heal: number, Data)
 
 
 function Hearts.Damage(target: Humanoid, amount: number, data: Data?)
@@ -53,9 +58,7 @@ function Hearts.RemoveModifier(id: number)
 end
 
 
-function Hearts._Add(target: Humanoid, healthSum: number, data: Data?)
-    data = data or {}
-
+function Hearts._Add(target: Humanoid, healthSum: number, data: Data)
     local function applyModifier(modifierFn: ModifierFn)
         local newHealthSum = modifierFn(healthSum, data)
 
@@ -78,9 +81,19 @@ function Hearts._Add(target: Humanoid, healthSum: number, data: Data?)
     if healthSum == 0 then return end
 
     if healthSum > 0 then
-        target.Health += healthSum
+        local heal = math.clamp(healthSum, 0, target.MaxHealth - target.Health)
+
+        if heal == 0 then return end
+
+        target.Health += heal
+        Hearts.HumanoidHealed:Fire(target, heal, data)
     else
-        target:TakeDamage(-healthSum)
+        local damage = math.clamp(-healthSum, 0, target.Health)
+
+        if damage == 0 then return end
+
+        target:TakeDamage(damage)
+        Hearts.HumanoidDamaged:Fire(target, damage, data)
     end
 end
 

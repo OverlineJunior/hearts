@@ -8,3 +8,4 @@ author = "Over"
 exclude = ["selene.toml", "roblox.toml"]
 
 [dependencies]
+Signal = "sleitnick/signal@^1"
