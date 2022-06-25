@@ -2,8 +2,9 @@ local Signal = require(script.Parent.Signal)
 
 export type Data = {[any]: any}
 type ModifierFn = (number, Data) -> number?
+type GlobalModifierFn = (Humanoid, number, Data) -> number?
 type Modifiers = {[Humanoid]: {[number]: ModifierFn?}}
-type GlobalModifiers = {[number]: ModifierFn?}
+type GlobalModifiers = {[number]: GlobalModifierFn?}
 
 local modifiers: Modifiers = {}
 local globalModifiers: GlobalModifiers = {}
@@ -41,7 +42,7 @@ function Hearts.AddModifier(target: Humanoid, modifierFn: ModifierFn): number
 end
 
 
-function Hearts.AddGlobalModifier(modifierFn: ModifierFn): number
+function Hearts.AddGlobalModifier(modifierFn: GlobalModifierFn): number
     globalModifiers[nextID] = modifierFn
     nextID += 1
 
@@ -59,23 +60,29 @@ end
 
 
 function Hearts._Add(target: Humanoid, healthSum: number, data: Data)
-    local function applyModifier(modifierFn: ModifierFn)
-        local newHealthSum = modifierFn(healthSum, data)
+    data = data or {}
+
+    local function applyModifier(callback)
+        local newHealthSum = callback()
 
         assert(
             type(newHealthSum) == 'number' or newHealthSum == nil,
-            string.format('Expected middleware function to return either a number or nil, got %q instead', typeof(newHealthSum))
+            string.format('Expected modifier function to return either a number or nil, got %q instead', typeof(newHealthSum))
         )
 
         healthSum = newHealthSum or healthSum
     end
 
     for _, modifierFn in modifiers[target] or {} do
-        applyModifier(modifierFn)
+        applyModifier(function()
+            return modifierFn(healthSum, data)
+        end)
     end
 
-    for _, modifierFn in globalModifiers do
-        applyModifier(modifierFn)
+    for _, gModifierFn in globalModifiers do
+        applyModifier(function()
+            return gModifierFn(target, healthSum, data)
+        end)
     end
 
     if healthSum == 0 then return end
