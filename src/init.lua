@@ -1,14 +1,22 @@
+--[[
+    TODO: Documentation.
+]]
+
 local Signal = require(script.Parent.Signal)
 
 export type Data = {[any]: any}
 type ModifierFn = (number, Data) -> number?
 type GlobalModifierFn = (Humanoid, number, Data) -> number?
-type Modifiers = {[Humanoid]: {[number]: ModifierFn?}}
-type GlobalModifiers = {[number]: GlobalModifierFn?}
 
-local modifiers: Modifiers = {}
-local globalModifiers: GlobalModifiers = {}
+local modifiers: {[Humanoid]: {[number]: ModifierFn?}} = {}
+local globalModifiers: {[number]: GlobalModifierFn?} = {}
 local nextID = 1
+
+
+local function IsEmpty(t: {}): boolean
+    return next(t) == nil
+end
+
 
 local Hearts = {}
 
@@ -33,6 +41,12 @@ end
 function Hearts.AddModifier(target: Humanoid, modifierFn: ModifierFn): number
     if not modifiers[target] then
         modifiers[target] = {}
+
+        target.Destroying:Connect(function()
+            for id in modifiers[target] do
+                Hearts.RemoveModifier(id)
+            end
+        end)
     end
 
     modifiers[target][nextID] = modifierFn
@@ -51,10 +65,16 @@ end
 
 
 function Hearts.RemoveModifier(id: number)
-    globalModifiers[id] = nil
+    if globalModifiers[id] then
+        globalModifiers[id] = nil
+    else
+        for hum, dict in modifiers do
+            dict[id] = nil
 
-    for _, dict in modifiers do
-        dict[id] = nil
+            if IsEmpty(dict) then
+                modifiers[hum] = nil
+            end
+        end
     end
 end
 
@@ -85,9 +105,8 @@ function Hearts._Add(target: Humanoid, healthSum: number, data: Data)
         end)
     end
 
-    if healthSum == 0 then return end
-
     if healthSum > 0 then
+        -- Always positive, but different context.
         local heal = math.clamp(healthSum, 0, target.MaxHealth - target.Health)
 
         if heal == 0 then return end
@@ -95,6 +114,7 @@ function Hearts._Add(target: Humanoid, healthSum: number, data: Data)
         target.Health += heal
         Hearts.HumanoidHealed:Fire(target, heal, data)
     else
+        -- Always positive, but different context.
         local damage = math.clamp(-healthSum, 0, target.Health)
 
         if damage == 0 then return end
